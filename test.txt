@@ -1,0 +1,5 @@
+The event object is useful in sending a signal to a thread indicating that a particular event has occurred. 
+For example, in overlapped input and output, the system sets a specified event object to the signaled state 
+when the overlapped operation has been completed. A single thread can specify different event objects in 
+several simultaneous overlapped operations, then use one of the multiple-object wait functions to wait for
+ the state of any one of the event objects to be signaled.
