@@ -1,21 +1,14 @@
 import javax.crypto.SecretKey;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.FileOutputStream;
+import java.io.RandomAccessFile;
 
-/**
- * Created with IntelliJ IDEA.
- * User: cat
- * Date: 15.10.12
- * Time: 21:06
- * To change this template use File | Settings | File Templates.
- */
 public class PKESKP {
+    final static int PKESKPTAG = 0xC1;
     // Public-Key Encrypted Session Key Packet
     // ------ header -----
     // C1 -- packet tag -- Public Key Encrypted Session Key Packet
-    // 00 -- length
     byte pTag;
-    byte length;
+    byte pLength;
     // ------ data ------
     // 03 -- Version
     // 0000 0000 0000 0002 -- Key ID -- Triple DES
@@ -30,8 +23,7 @@ public class PKESKP {
 
     PKESKP(SecretKey key, String pub_exp, String mod) throws Exception
     {
-        pTag = (byte)0xC1;
-        length = 0;
+        pTag = (byte)PKESKPTAG;
         version = 3;
         keyID = new byte[]{0,0,0,0,0,0,0,2};
         PKAID = 1;
@@ -47,30 +39,28 @@ public class PKESKP {
             sum += symmetric_key[i] % 65536;
         byte[] res = Utilities.toBytes(sum);
         res[0] = res[3];
-        res[1]  = res[2];
+        res[1] = res[2];
         System.arraycopy(res, 0, formatted_key, symmetric_key.length+ 1, 2);
         encrKey = new MPI(RSA.RSA_operation(Utilities.getHexString(formatted_key), pub_exp, mod));
         // 12 -- packet header, 2 + encrKey.len() -- MPI
-        length = Utilities.toBytes(12 + 2 + encrKey.len())[3];
+        pLength = Utilities.toBytes(12 + 2 + encrKey.len())[3]; //3 for big endian
     }
-    PKESKP(InputStream in) throws Exception
+    PKESKP(RandomAccessFile in) throws Exception
     {
-        byte[] arr=new byte[1];
-        in.read(arr);
-        pTag=arr[0];
-        in.read(arr);
-        length=arr[0];
-        in.read(arr);
-        version=arr[0];
-        keyID= new byte[8];
-        in.read(keyID,0,8);
-        in.read(arr);
-        PKAID=arr[0];
-        encrKey= new MPI(in);
+        if (((pTag = (byte)in.read()) & 0xff) == PKESKPTAG) {
+            pLength = (byte)in.read();
+            version = (byte)in.read();
+            keyID = new byte[8];
+            in.read(keyID);
+            PKAID = (byte)in.read();
+            encrKey = new MPI(in);
+        }
+        else
+            throw new Exception("Not PKESKP packet");
     }
-    public void dump(OutputStream out) throws Exception{
+    public void dump(FileOutputStream out) throws Exception{
         out.write(pTag & 0xff);
-        out.write(length & 0xff);
+        out.write(pLength & 0xff);
         out.write(version & 0xff);
         for(int i : keyID)
             out.write(i & 0xff);

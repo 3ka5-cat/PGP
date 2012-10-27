@@ -1,19 +1,23 @@
 import java.math.BigInteger;
 
-/**
- * Created with IntelliJ IDEA.
- * User: cat
- * Date: 15.10.12
- * Time: 21:09
- * To change this template use File | Settings | File Templates.
- */
 public class Utilities {
+
     public static String getHexString(byte[] b) {
         String result = "";
         for (int i = 0; i < b.length; i++) {
             result += Integer.toString((b[i] & 0xff) + 0x100, 16).substring(1);
         }
         return result;
+    }
+
+    public static byte[] hex2Byte(String str)
+    {
+        byte[] bytes = new byte[str.length() / 2];
+        for (int i = 0; i < bytes.length; i++)
+        {
+            bytes[i] = (byte) Integer.parseInt(str.substring(2 * i, 2 * i + 2), 16);
+        }
+        return bytes;
     }
 
     public static byte[] toBytes(BigInteger bigInteger) {
@@ -42,4 +46,6 @@ public class Utilities {
                 ((byte_array[2] & 0xFF) << 8) +
                 (byte_array[3] & 0xFF);
     }
+
+
 }
