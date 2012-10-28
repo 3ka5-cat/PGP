@@ -1,7 +1,6 @@
 import java.math.BigInteger;
 
 public class Utilities {
-
     public static String getHexString(byte[] b) {
         String result = "";
         for (int i = 0; i < b.length; i++) {

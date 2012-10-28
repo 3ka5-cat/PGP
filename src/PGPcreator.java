@@ -3,11 +3,11 @@ import java.io.FileOutputStream;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.DESedeKeySpec;
+//import javax.crypto.SecretKeyFactory;
+//import javax.crypto.spec.DESedeKeySpec;
 import java.io.RandomAccessFile;
 
-public class PGPcreator {
+public class PGPcreator implements Constants {
     SecretKey key;
     String pub_exp;
     String mod;
@@ -45,18 +45,18 @@ public class PGPcreator {
         int len = -1;
         byte[] arr=new byte[2];
 
-        while ((len = PGP_file.read(arr)) != -1 && (arr[0] & 0xff) != SP.SPTAG) {
+        while ((len = PGP_file.read(arr)) != -1 && (arr[0] & 0xff) != SPTAG) {
             //System.out.println("checkSign: skip packet for SP");
             PGP_file.seek(arr[1] & 0xff);
         }
 
         if (len > 0){
             PGP_file.seek(PGP_file.getFilePointer() - 2);
-            SP sp=new SP(PGP_file, pub_exp, mod);
+            SP sp=new SP(PGP_file);
             byte[] sign = (RSA.RSA_operation(Utilities.getHexString(sp.signature.MPIstring),
                     pub_exp, mod));
             System.out.println("Decrypted Hash:: " + Utilities.getHexString(sign));
-            System.out.println("Hash of decrypted file:: " + Utilities.getHexString(SP.getHash(file)));
+            System.out.println("Hash of decrypted file:: " + Utilities.getHexString(sp.getHash(file)));
         }
         else
             System.out.println("checkSign: can't find SP packet");
@@ -80,7 +80,7 @@ public class PGPcreator {
         RandomAccessFile PGP_file = new RandomAccessFile(encrypted_file,"r");
         int len = -1;
         byte[] arr=new byte[2];
-        while((len = PGP_file.read(arr)) != -1 && (arr[0] & 0xff) != PKESKP.PKESKPTAG) {
+        while((len = PGP_file.read(arr)) != -1 && (arr[0] & 0xff) != PKESKPTAG) {
             //System.out.println("decrypt: skip packet for PKESKP");
             PGP_file.seek(arr[1] & 0xff);
         }
@@ -88,7 +88,8 @@ public class PGPcreator {
             PGP_file.seek(PGP_file.getFilePointer() - 2);
             FileOutputStream output_file = new FileOutputStream(file);
             PKESKP key_packet=new PKESKP(PGP_file);
-            byte[] formatted_decr_key = RSA.RSA_operation(Utilities.getHexString(key_packet.encrKey.MPIstring), priv_exp, mod);
+            byte[] formatted_decr_key =
+                    RSA.RSA_operation(Utilities.getHexString(key_packet.encrKey.MPIstring), priv_exp, mod);
             byte[] real_key=new byte[formatted_decr_key.length - 3];
             System.arraycopy(formatted_decr_key,1,real_key,0,real_key.length);
             //BigInteger test = new BigInteger(real_key);
@@ -108,6 +109,21 @@ public class PGPcreator {
 class Program {
     public static void main(String[] argv) throws Exception {
         PGPcreator crtr = new PGPcreator();
+        //Both digital signature and confidentiality services may be applied to
+        //the same message.  First, a signature is generated for the message
+        //and attached to the message.  Then the message plus signature is
+        //encrypted using a symmetric session key.  Finally, the session key is
+        //encrypted using public-key encryption and prefixed to the encrypted
+        //block.
+
+        //3.  The sending software generates a signature from the hash code
+        //using the sender's private key.
+        //4.  The binary signature is attached to the message.
+        //5.  The receiving software keeps a copy of the message signature.
+        //6.  The receiving software generates a new hash code for the received
+        //message and verifies it using the message's signature.  If the
+        //verification is successful, the message is accepted as authentic.
+
         crtr.sign("test.txt", "encrypted_test.txt");
         crtr.encrypt("test.txt", "encrypted_test.txt");
 

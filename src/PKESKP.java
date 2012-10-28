@@ -2,8 +2,7 @@ import javax.crypto.SecretKey;
 import java.io.FileOutputStream;
 import java.io.RandomAccessFile;
 
-public class PKESKP {
-    final static int PKESKPTAG = 0xC1;
+public class PKESKP implements Constants{
     // Public-Key Encrypted Session Key Packet
     // ------ header -----
     // C1 -- packet tag -- Public Key Encrypted Session Key Packet
