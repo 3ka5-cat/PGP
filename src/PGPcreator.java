@@ -53,10 +53,21 @@ public class PGPcreator implements Constants {
         if (len > 0){
             PGP_file.seek(PGP_file.getFilePointer() - 2);
             SP sp=new SP(PGP_file);
+            //byte[] sign = sp.signature.MPIstring;
             byte[] sign = (RSA.RSA_operation(Utilities.getHexString(sp.signature.MPIstring),
                     pub_exp, mod));
-            System.out.println("Decrypted Hash:: " + Utilities.getHexString(sign));
-            System.out.println("Hash of decrypted file:: " + Utilities.getHexString(sp.getHash(file)));
+            if(sign[0] == (byte)0x01)
+            {
+                int padding = 1;
+                for(;sign[padding] != (byte)0x00;padding++)
+                    continue;
+                byte[] hash = new byte[sign.length - padding - 16];
+                System.arraycopy(sign,padding + 16,hash,0,hash.length);
+                System.out.println("Decrypted Hash:: " + Utilities.getHexString(hash));
+                System.out.println("Hash of decrypted file:: " + Utilities.getHexString(sp.getHash(file)));
+            }
+            else
+                System.out.println("Wrong padding");
         }
         else
             System.out.println("checkSign: can't find SP packet");
@@ -90,6 +101,7 @@ public class PGPcreator implements Constants {
             PKESKP key_packet=new PKESKP(PGP_file);
             byte[] formatted_decr_key =
                     RSA.RSA_operation(Utilities.getHexString(key_packet.encrKey.MPIstring), priv_exp, mod);
+            formatted_decr_key = key_packet.pkcs1_decrypt(formatted_decr_key);
             byte[] real_key=new byte[formatted_decr_key.length - 3];
             System.arraycopy(formatted_decr_key,1,real_key,0,real_key.length);
             //BigInteger test = new BigInteger(real_key);
@@ -123,10 +135,8 @@ class Program {
         //6.  The receiving software generates a new hash code for the received
         //message and verifies it using the message's signature.  If the
         //verification is successful, the message is accepted as authentic.
-
         crtr.sign("test.txt", "encrypted_test.txt");
         crtr.encrypt("test.txt", "encrypted_test.txt");
-
         PGPcreator crtr2 = new PGPcreator();
         crtr2.decrypt("decrypted_test.txt", "encrypted_test.txt");
         crtr2.checkSign("decrypted_test.txt", "encrypted_test.txt");

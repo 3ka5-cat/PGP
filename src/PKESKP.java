@@ -1,6 +1,7 @@
 import javax.crypto.SecretKey;
 import java.io.FileOutputStream;
 import java.io.RandomAccessFile;
+import java.util.Random;
 
 public class PKESKP implements Constants{
     // Public-Key Encrypted Session Key Packet
@@ -40,7 +41,8 @@ public class PKESKP implements Constants{
         res[0] = res[3];
         res[1] = res[2];
         System.arraycopy(res, 0, formatted_key, symmetric_key.length+ 1, 2);
-        encrKey = new MPI(RSA.RSA_operation(Utilities.getHexString(formatted_key), pub_exp, mod));
+        //encrKey = new MPI(RSA.RSA_operation(Utilities.getHexString(formatted_key), pub_exp, mod));
+        encrKey = new MPI(RSA.RSA_operation(Utilities.getHexString(pkcs1_encrypt(formatted_key,50)), pub_exp, mod));
         // 12 -- packet header, 2 + encrKey.len() -- MPI
         pLength = Utilities.toBytes(12 + 2 + encrKey.len())[3]; //3 for big endian
     }
@@ -57,6 +59,38 @@ public class PKESKP implements Constants{
         else
             throw new Exception("Not PKESKP packet");
     }
+
+    public byte[] pkcs1_encrypt(byte[] message, int k) throws Exception
+    {
+        byte[] ps = new byte[k - message.length - 3];
+        new Random().nextBytes(ps);
+        for(int i = 0; i < ps.length; i++)
+            if(ps[i] == 0x00) ps[i] = (byte) 0x01;
+        byte[] encoded_message = new byte[message.length + ps.length + 3];
+        encoded_message[0] = (byte)0x00;
+        encoded_message[1] = (byte)0x02;
+        for(int i = 0; i < ps.length; i++)
+            encoded_message[i+2] = ps[i];
+        encoded_message[ps.length + 2] = (byte)0x00;
+        for(int i = 0; i<message.length; i++)
+            encoded_message[i + ps.length + 3] = message[i];
+        return encoded_message;
+    }
+
+    public byte[] pkcs1_decrypt(byte[] encoded_message) throws  Exception
+    {
+        if(encoded_message[0] == (byte)0x02)
+        {
+            int padding;
+            for(padding = 1; encoded_message[padding] != (byte)0x00; padding++)
+                continue;
+            byte[] decoded_message = new byte[encoded_message.length - 1 - padding];
+            System.arraycopy(encoded_message,padding+1,decoded_message,0,decoded_message.length);
+            return decoded_message;
+        }
+        else return new byte[0];
+    }
+
     public void dump(FileOutputStream out) throws Exception{
         out.write(pTag & 0xff);
         out.write(pLength & 0xff);

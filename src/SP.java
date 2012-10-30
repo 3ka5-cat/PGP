@@ -53,8 +53,11 @@ public class SP implements Constants {
         //the four-octet signature time.
         signHeader[0] = signType;
         System.arraycopy(signHeader, 1, time, 0, 4);
-        signature = new MPI(RSA.RSA_operation(Utilities.getHexString(getHash(file)), priv_exp, mod));
+        //signature = new MPI(RSA.RSA_operation(Utilities.getHexString(getHash(file)), priv_exp, mod));
+        //EMSA_PKCS_Encoding(file,60);
         // 19 -- packet header, 2 + signature.len() -- MPI
+        signature = new MPI(RSA.RSA_operation(Utilities.getHexString(EMSA_PKCS_Encoding(file,50)), priv_exp, mod));
+        //signature = new MPI(EMSA_PKCS_Encoding(file,50));
         pLength = Utilities.toBytes(19 + 2 + signature.len())[3]; //3 for big endian
     }
 
@@ -92,6 +95,28 @@ public class SP implements Constants {
         }
         input_file.close();
         return md.digest();
+    }
+
+    public byte[] EMSA_PKCS_Encoding(String file, int emLen) throws Exception
+    {
+        byte[] SHA1_DER = new byte[]{(byte)0x30, 0x21, 0x30, 0x09, 0x06, 0x05, 0x2b, 0x0e, 0x03, 0x02, 0x1a, 0x05, 0x00, 0x04, 0x14};
+        byte[] Hash = getHash(file);
+        byte[] T = new byte[Hash.length+SHA1_DER.length];
+        System.arraycopy(SHA1_DER,0,T,0,SHA1_DER.length);
+        System.arraycopy(Hash,0,T,SHA1_DER.length,Hash.length);
+        byte[] PS = new byte[emLen - T.length - 3];
+        for(int i = 0; i < PS.length ; i++)
+            PS[i] = (byte)0xff;
+        byte[] encoded_message = new byte[3 + PS.length + T.length];
+        encoded_message[0] = (byte) 0x00;
+        encoded_message[1] = (byte) 0x01;
+        for(int i = 0; i < PS.length; i++)
+            encoded_message[i+2] = PS[i];
+        encoded_message[PS.length+2] = 0x00;
+        for(int  i = 0; i < T.length; i++)
+            encoded_message[i+PS.length+3] = T[i];
+        return  encoded_message;
+
     }
 
     public void dump(FileOutputStream out) throws Exception
