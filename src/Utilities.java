@@ -9,9 +9,11 @@ public class Utilities {
         return result;
     }
 
-    public static byte[] hex2Byte(String str) {
+    public static byte[] hex2Byte(String str)
+    {
         byte[] bytes = new byte[str.length() / 2];
-        for (int i = 0; i < bytes.length; i++) {
+        for (int i = 0; i < bytes.length; i++)
+        {
             bytes[i] = (byte) Integer.parseInt(str.substring(2 * i, 2 * i + 2), 16);
         }
         return bytes;
@@ -36,17 +38,20 @@ public class Utilities {
         return result;
     }
 
-    public static int toInt(byte[] byteArray) {
-        return ((byteArray[0] & 0xFF) << 24) +
-                ((byteArray[1] & 0xFF) << 16) +
-                ((byteArray[2] & 0xFF) << 8) +
-                (byteArray[3] & 0xFF);
+    public static int toInt(byte[] byte_array)
+    {
+        int ret =  ((byte_array[0] & 0xFF) << 24) +
+                ((byte_array[1] & 0xFF) << 16) +
+                ((byte_array[2] & 0xFF) << 8) +
+                (byte_array[3] & 0xFF);
+        return ret;
     }
 
-    public static int BitsInByte(byte b) {
+    public static int Bits_in_byte(byte b)
+    {
         int ret = 8;
-        for (int i = 7; i >= 0; i++)
-            if ((b << i) == 0)
+        for(int i=7;i>=0;i++)
+            if(b<<i == 0)
                 ret--;
             else
                 break;
