@@ -9,12 +9,11 @@ import java.io.RandomAccessFile;
 
 public class PGPcreator implements Constants {
     SecretKey key;
-    String pub_exp;
+    String pubExp;
     String mod;
-    String priv_exp;
+    String privExp;
 
-    PGPcreator() throws Exception
-    {   //DESede -- Triple DES Encryption
+    PGPcreator() throws Exception {   //DESede -- Triple DES Encryption
         key = KeyGenerator.getInstance("DESede").generateKey();
         /*
         byte[] keyBytes = "0123456789ABCDEFABCDEF01234567890123456789ABCDEF".getBytes("ASCII");
@@ -24,97 +23,88 @@ public class PGPcreator implements Constants {
         */
         //String format = key.getFormat();
         //System.out.println(format);
-        pub_exp = "10001";
+        pubExp = "10001";
         mod = "966CC1A67319C5EB3166BB0FFAD73D81CF501D9BE254CB6B1346092D0499E816517FF8D55839292774C5890A4AFA30406B87DEFB96C1F5BC2A10B5C2E0755E6B266EFED871F15F0E34446EA5A0F369542A44FF2BBAF06F7E5C38C12DA0A9FF4D95A5DD06EAAD15F5BCED0ED96F560E5119552C5AC1117A77715F56997ECA1AC7";
-        priv_exp = "391A9A3D04EEE0CA931B6BA1FA58A179D8E89204EE5BC0492AACE8A8D55953D8BD21B6A5CEF30C237559D3D73B7554C1EFD0499EFAB131073874D57B60584DFA0B16FC05AF2EF13E24DDF49982B6E59E7C6643AF2B9FF9837A85DA9C814662F35BC45DFA6CA01E5F10DBACA762AB31861E615B2D14E7179EBA6FA37575BBEA29";
+        privExp = "391A9A3D04EEE0CA931B6BA1FA58A179D8E89204EE5BC0492AACE8A8D55953D8BD21B6A5CEF30C237559D3D73B7554C1EFD0499EFAB131073874D57B60584DFA0B16FC05AF2EF13E24DDF49982B6E59E7C6643AF2B9FF9837A85DA9C814662F35BC45DFA6CA01E5F10DBACA762AB31861E615B2D14E7179EBA6FA37575BBEA29";
     }
 
-    public void sign(String file, String encrypted_file) throws Exception
-    {
-        FileOutputStream PGP_file = new FileOutputStream(encrypted_file, true);
-        SP sp = new SP(file,pub_exp,priv_exp,mod);
-        sp.dump(PGP_file);
-        //PGP_file.write((byte)0xDE);
-        //PGP_file.write((byte)0xAD);
-        PGP_file.close();
+    public void sign(String file, String encryptedFile) throws Exception {
+        FileOutputStream PGPFile = new FileOutputStream(encryptedFile, true);
+        SP sp = new SP(file, pubExp, privExp, mod);
+        sp.dump(PGPFile);
+        //PGPFile.write((byte)0xDE);
+        //PGPFile.write((byte)0xAD);
+        PGPFile.close();
     }
 
-    public void checkSign(String file, String encrypted_file) throws Exception
-    {
-        RandomAccessFile PGP_file = new RandomAccessFile(encrypted_file,"r");
+    public void checkSign(String file, String encryptedFile) throws Exception {
+        RandomAccessFile PGPFile = new RandomAccessFile(encryptedFile, "r");
         int len = -1;
-        byte[] arr=new byte[2];
+        byte[] arr = new byte[2];
 
-        while ((len = PGP_file.read(arr)) != -1 && (arr[0] & 0xff) != SPTAG) {
+        while ((len = PGPFile.read(arr)) != -1 && (arr[0] & 0xff) != SPTAG) {
             //System.out.println("checkSign: skip packet for SP");
-            PGP_file.seek(arr[1] & 0xff);
+            PGPFile.seek(arr[1] & 0xff);
         }
 
-        if (len > 0){
-            PGP_file.seek(PGP_file.getFilePointer() - 2);
-            SP sp=new SP(PGP_file);
+        if (len > 0) {
+            PGPFile.seek(PGPFile.getFilePointer() - 2);
+            SP sp = new SP(PGPFile);
             //byte[] sign = sp.signature.MPIstring;
-            byte[] sign = (RSA.RSA_operation(Utilities.getHexString(sp.signature.MPIstring),
-                    pub_exp, mod));
-            if(sign[0] == (byte)0x01)
-            {
+            byte[] sign = (RSA.RSAOperation(Utilities.getHexString(sp.signature.MPIstring),
+                    pubExp, mod));
+            if (sign[0] == (byte) 0x01) {
                 int padding = 1;
-                for(;sign[padding] != (byte)0x00;padding++)
-                    continue;
+                for (; sign[padding] != (byte) 0x00; padding++) ;
                 byte[] hash = new byte[sign.length - padding - 16];
-                System.arraycopy(sign,padding + 16,hash,0,hash.length);
+                System.arraycopy(sign, padding + 16, hash, 0, hash.length);
                 System.out.println("Decrypted Hash:: " + Utilities.getHexString(hash));
                 System.out.println("Hash of decrypted file:: " + Utilities.getHexString(sp.getHash(file)));
-            }
-            else
+            } else
                 System.out.println("Wrong padding");
-        }
-        else
+        } else
             System.out.println("checkSign: can't find SP packet");
-        PGP_file.close();
+        PGPFile.close();
     }
 
-    public void encrypt(String file, String encrypted_file) throws Exception
-    {
-        FileInputStream input_file = new FileInputStream(file);
-        FileOutputStream PGP_file = new FileOutputStream(encrypted_file, true);
-        PKESKP key_packet = new PKESKP(key, pub_exp, mod);
-        key_packet.dump(PGP_file);
+    public void encrypt(String file, String encryptedFile) throws Exception {
+        FileInputStream inputFile = new FileInputStream(file);
+        FileOutputStream PGPFile = new FileOutputStream(encryptedFile, true);
+        PKESKP keyPacket = new PKESKP(key, pubExp, mod);
+        keyPacket.dump(PGPFile);
         Des encryptor = new Des(key);
-        encryptor.encrypt(input_file, PGP_file);
-        input_file.close();
-        PGP_file.close();
+        encryptor.encrypt(inputFile, PGPFile);
+        inputFile.close();
+        PGPFile.close();
     }
 
-    public void decrypt(String file, String encrypted_file) throws Exception
-    {
-        RandomAccessFile PGP_file = new RandomAccessFile(encrypted_file,"r");
+    public void decrypt(String file, String encryptedFile) throws Exception {
+        RandomAccessFile PGPFile = new RandomAccessFile(encryptedFile, "r");
         int len = -1;
-        byte[] arr=new byte[2];
-        while((len = PGP_file.read(arr)) != -1 && (arr[0] & 0xff) != PKESKPTAG) {
+        byte[] arr = new byte[2];
+        while ((len = PGPFile.read(arr)) != -1 && (arr[0] & 0xff) != PKESKPTAG) {
             //System.out.println("decrypt: skip packet for PKESKP");
-            PGP_file.seek(arr[1] & 0xff);
+            PGPFile.seek(arr[1] & 0xff);
         }
-        if (len > 0){
-            PGP_file.seek(PGP_file.getFilePointer() - 2);
-            FileOutputStream output_file = new FileOutputStream(file);
-            PKESKP key_packet=new PKESKP(PGP_file);
-            byte[] formatted_decr_key =
-                    RSA.RSA_operation(Utilities.getHexString(key_packet.encrKey.MPIstring), priv_exp, mod);
-            formatted_decr_key = key_packet.pkcs1_decrypt(formatted_decr_key);
-            byte[] real_key=new byte[formatted_decr_key.length - 3];
-            System.arraycopy(formatted_decr_key,1,real_key,0,real_key.length);
-            //BigInteger test = new BigInteger(real_key);
-            //String hex_key = test.toString(16);
-            //int hc = hex_key.hashCode();
-            SecretKeySpec ks = new SecretKeySpec(real_key, "DESede");
+        if (len > 0) {
+            PGPFile.seek(PGPFile.getFilePointer() - 2);
+            FileOutputStream outputFile = new FileOutputStream(file);
+            PKESKP keyPacket = new PKESKP(PGPFile);
+            byte[] formattedDecrKey =
+                    RSA.RSAOperation(Utilities.getHexString(keyPacket.encrKey.MPIstring), privExp, mod);
+            formattedDecrKey = keyPacket.pkcs1Decrypt(formattedDecrKey);
+            byte[] realKey = new byte[formattedDecrKey.length - 3];
+            System.arraycopy(formattedDecrKey, 1, realKey, 0, realKey.length);
+            //BigInteger test = new BigInteger(realKey);
+            //String hexKey = test.toString(16);
+            //int hc = hexKey.hashCode();
+            SecretKeySpec ks = new SecretKeySpec(realKey, "DESede");
             Des decryptor = new Des(ks);
-            decryptor.decrypt(PGP_file, output_file);
-            output_file.close();
-        }
-        else
+            decryptor.decrypt(PGPFile, outputFile);
+            outputFile.close();
+        } else
             System.out.println("Decrypt: can't find PKESKP packet");
-        PGP_file.close();
+        PGPFile.close();
     }
 }
 

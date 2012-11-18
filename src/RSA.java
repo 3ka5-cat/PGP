@@ -1,7 +1,7 @@
 import java.math.BigInteger;
 
 public class RSA {
-    public static byte[] RSA_operation(String key, String exp, String modulus) throws Exception {
+    public static byte[] RSAOperation(String key, String exp, String modulus) throws Exception {
         BigInteger e = new BigInteger(exp, 16);
         BigInteger n = new BigInteger(modulus, 16);
         BigInteger m = new BigInteger(key, 16);
