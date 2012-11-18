@@ -9,12 +9,12 @@ import java.io.RandomAccessFile;
 
 import java.util.Arrays;
 
-public class Des {
-    final static int SEDPTAG = 0xC3;
+public class Des implements Constants {
     // because of strange 2-octet pLength field in the header
     // TODO: how to write 1024 as pLength to 2-octet pLength field in the header
     Cipher ecipher;
     Cipher dcipher;
+    byte version;
     Des(SecretKey key) throws Exception{
         //byte[] iv = new byte[] { (byte) 0x8E, 0x12, 0x39, (byte) 0x9C, 0x07, 0x72, 0x6F, 0x5A };
         //AlgorithmParameterSpec paramSpec = new IvParameterSpec(iv);
@@ -28,10 +28,12 @@ public class Des {
 
     public void encrypt(InputStream in, OutputStream out)  throws Exception{
         // Symmetrically Encrypted Data Packet
+        version = 4;
         int blockSize = ecipher.getBlockSize();
         int len = 0;
         byte[] buf = new byte[184];
         int add = 0;
+        int packet_len;
         byte[] paddedBuf;
         System.out.println("Encrypted file:: ");
         while ((len = in.read(buf)) >= 0) {
@@ -45,7 +47,9 @@ public class Des {
                 for (int i = 0; i < len + add; ++i)
                     paddedBuf[i] = buf[i];
             }
-            out.write((byte)len & 0xff);
+            packet_len = len + add + 1;  // data + padding + version
+            out.write((byte)packet_len & 0xff);
+            out.write(version & 0xff);
             byte[] cipherText = new byte[len + add];
             len = ecipher.update(buf, 0, len + add, cipherText);
             out.write(cipherText, 0, len);
@@ -62,13 +66,15 @@ public class Des {
         System.out.println("Decrypted file:: ");
         while (in.read(header,0,2) != -1 && ((header[0] & 0xff) == SEDPTAG)) {
             len = header[1] & 0xff;
+            version = (byte) in.read();
+            len--;
             if ((len % blockSize) != 0)
                 len += blockSize - (len - blockSize * (len / blockSize));
             byte[] buf = new byte[len];
             read = in.read(buf,0,len);
             byte[] decrypted = new byte[len];
             dcipher.update(buf,0,read,decrypted);
-            out.write(decrypted, 0, header[1] & 0xff);
+            out.write(decrypted, 0, len & 0xff);
             System.out.println(new String(decrypted));
         }
     }
