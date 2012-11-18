@@ -7,13 +7,13 @@ import javax.crypto.spec.SecretKeySpec;
 //import javax.crypto.spec.DESedeKeySpec;
 import java.io.RandomAccessFile;
 
-public class PGPcreator implements Constants {
+public class RSAcreator implements Constants {
     SecretKey key;
     String pubExp;
     String mod;
     String privExp;
 
-    PGPcreator() throws Exception {   //DESede -- Triple DES Encryption
+    RSAcreator() throws Exception {   //DESede -- Triple DES Encryption
         key = KeyGenerator.getInstance("DESede").generateKey();
         /*
         byte[] keyBytes = "0123456789ABCDEFABCDEF01234567890123456789ABCDEF".getBytes("ASCII");
@@ -55,7 +55,7 @@ public class PGPcreator implements Constants {
                     pubExp, mod));
             if (sign[0] == (byte) 0x01) {
                 int padding = 1;
-                for (; sign[padding] != (byte) 0x00; padding++) ;
+                for (; sign[padding] != (byte) 0x00; padding++);
                 byte[] hash = new byte[sign.length - padding - 16];
                 System.arraycopy(sign, padding + 16, hash, 0, hash.length);
                 System.out.println("Decrypted Hash:: " + Utilities.getHexString(hash));
@@ -107,31 +107,5 @@ public class PGPcreator implements Constants {
         PGPFile.close();
     }
 }
-
-class Program {
-    public static void main(String[] argv) throws Exception {
-        PGPcreator crtr = new PGPcreator();
-        //Both digital signature and confidentiality services may be applied to
-        //the same message.  First, a signature is generated for the message
-        //and attached to the message.  Then the message plus signature is
-        //encrypted using a symmetric session key.  Finally, the session key is
-        //encrypted using public-key encryption and prefixed to the encrypted
-        //block.
-
-        //3.  The sending software generates a signature from the hash code
-        //using the sender's private key.
-        //4.  The binary signature is attached to the message.
-        //5.  The receiving software keeps a copy of the message signature.
-        //6.  The receiving software generates a new hash code for the received
-        //message and verifies it using the message's signature.  If the
-        //verification is successful, the message is accepted as authentic.
-        //crtr.sign("test.txt", "encrypted_test.txt");
-        crtr.encrypt("test.txt", "encrypted_test.txt");
-        PGPcreator crtr2 = new PGPcreator();
-        crtr2.decrypt("decrypted_test.txt", "encrypted_test.txt");
-        //crtr2.checkSign("decrypted_test.txt", "encrypted_test.txt");
-    }
-}
-
 
 
