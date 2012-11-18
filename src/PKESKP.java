@@ -3,12 +3,12 @@ import java.io.FileOutputStream;
 import java.io.RandomAccessFile;
 import java.util.Random;
 
-public class PKESKP implements Constants{
+public class PKESKP implements Constants {
     // Public-Key Encrypted Session Key Packet
     // ------ header -----
     // C1 -- packet tag -- Public Key Encrypted Session Key Packet
-    byte pTag;
-    byte pLength;
+    byte packet_tag;
+    byte packet_length;
     // ------ data ------
     // 03 -- Version
     // 0000 0000 0000 0002 -- Key ID -- Triple DES
@@ -17,16 +17,15 @@ public class PKESKP implements Constants{
     // 00 00 -- Length of the MPI in bits
     // strings of octets -- encrypted key
     byte version;
-    byte[] keyID;
-    byte PKAID;
-    MPI encrKey;
+    byte[] key_id;
+    byte PKA_id;
+    MPI encr_key;
 
-    PKESKP(SecretKey key, String pub_exp, String mod) throws Exception
-    {
-        pTag = (byte)PKESKPTAG;
+    PKESKP(SecretKey key, String pub_exp, String mod) throws Exception {
+        packet_tag = (byte) PKESKP_TAG;
         version = 3;
-        keyID = new byte[]{0,0,0,0,0,0,0,2};
-        PKAID = 1;
+        key_id = new byte[]{0, 0, 0, 0, 0, 0, 0, 2};
+        PKA_id = 1;
 
         byte[] symmetric_key = key.getEncoded();
         //String key_string = getHexString(symmetric_key);
@@ -40,64 +39,58 @@ public class PKESKP implements Constants{
         byte[] res = Utilities.toBytes(sum);
         res[0] = res[3];
         res[1] = res[2];
-        System.arraycopy(res, 0, formatted_key, symmetric_key.length+ 1, 2);
-        //encrKey = new MPI(RSA.RSA_operation(Utilities.getHexString(formatted_key), pub_exp, mod));
-        encrKey = new MPI(RSA.RSA_operation(Utilities.getHexString(pkcs1_encrypt(formatted_key,50)), pub_exp, mod));
-        // 12 -- packet header, 2 + encrKey.len() -- MPI
-        pLength = Utilities.toBytes(12 + 2 + encrKey.len())[3]; //3 for big endian
+        System.arraycopy(res, 0, formatted_key, symmetric_key.length + 1, 2);
+        //encr_key = new MPI(RSA.RSA_operation(Utilities.getHexString(formatted_key), pub_exp, mod));
+        encr_key = new MPI(RSA.RSAoperation(Utilities.getHexString(pkcs1Encrypt(formatted_key, 50)), pub_exp, mod));
+        // 12 -- packet header, 2 + encr_key.len() -- MPI
+        packet_length = Utilities.toBytes(12 + 2 + encr_key.len())[3]; //3 for big endian
     }
-    PKESKP(RandomAccessFile in) throws Exception
-    {
-        if (((pTag = (byte)in.read()) & 0xff) == PKESKPTAG) {
-            pLength = (byte)in.read();
-            version = (byte)in.read();
-            keyID = new byte[8];
-            in.read(keyID);
-            PKAID = (byte)in.read();
-            encrKey = new MPI(in);
-        }
-        else
+
+    PKESKP(RandomAccessFile in) throws Exception {
+        if (((packet_tag = (byte) in.read()) & 0xff) == PKESKP_TAG) {
+            packet_length = (byte) in.read();
+            version = (byte) in.read();
+            key_id = new byte[8];
+            in.read(key_id);
+            PKA_id = (byte) in.read();
+            encr_key = new MPI(in);
+        } else
             throw new Exception("Not PKESKP packet");
     }
 
-    public byte[] pkcs1_encrypt(byte[] message, int k) throws Exception
-    {
+    public byte[] pkcs1Encrypt(byte[] message, int k) throws Exception {
         byte[] ps = new byte[k - message.length - 3];
         new Random().nextBytes(ps);
-        for(int i = 0; i < ps.length; i++)
-            if(ps[i] == 0x00) ps[i] = (byte) 0x01;
+        for (int i = 0; i < ps.length; i++)
+            if (ps[i] == 0x00) ps[i] = (byte) 0x01;
         byte[] encoded_message = new byte[message.length + ps.length + 3];
-        encoded_message[0] = (byte)0x00;
-        encoded_message[1] = (byte)0x02;
-        for(int i = 0; i < ps.length; i++)
-            encoded_message[i+2] = ps[i];
-        encoded_message[ps.length + 2] = (byte)0x00;
-        for(int i = 0; i<message.length; i++)
+        encoded_message[0] = (byte) 0x00;
+        encoded_message[1] = (byte) 0x02;
+        for (int i = 0; i < ps.length; i++)
+            encoded_message[i + 2] = ps[i];
+        encoded_message[ps.length + 2] = (byte) 0x00;
+        for (int i = 0; i < message.length; i++)
             encoded_message[i + ps.length + 3] = message[i];
         return encoded_message;
     }
 
-    public byte[] pkcs1_decrypt(byte[] encoded_message) throws  Exception
-    {
-        if(encoded_message[0] == (byte)0x02)
-        {
+    public byte[] pkcs1Decrypt(byte[] encoded_message) throws Exception {
+        if (encoded_message[0] == (byte) 0x02) {
             int padding;
-            for(padding = 1; encoded_message[padding] != (byte)0x00; padding++)
-                continue;
+            for (padding = 1; encoded_message[padding] != (byte) 0x00; padding++) ;
             byte[] decoded_message = new byte[encoded_message.length - 1 - padding];
-            System.arraycopy(encoded_message,padding+1,decoded_message,0,decoded_message.length);
+            System.arraycopy(encoded_message, padding + 1, decoded_message, 0, decoded_message.length);
             return decoded_message;
-        }
-        else return new byte[0];
+        } else return new byte[0];
     }
 
-    public void dump(FileOutputStream out) throws Exception{
-        out.write(pTag & 0xff);
-        out.write(pLength & 0xff);
+    public void dump(FileOutputStream out) throws Exception {
+        out.write(packet_tag & 0xff);
+        out.write(packet_length & 0xff);
         out.write(version & 0xff);
-        for(int i : keyID)
+        for (int i : key_id)
             out.write(i & 0xff);
-        out.write(PKAID & 0xff);
-        encrKey.dump(out);
+        out.write(PKA_id & 0xff);
+        encr_key.dump(out);
     }
 }
