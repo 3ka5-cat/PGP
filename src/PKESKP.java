@@ -3,7 +3,8 @@ import java.io.FileOutputStream;
 import java.io.RandomAccessFile;
 import java.util.Random;
 
-public class PKESKP implements Constants{
+public class PKESKP {
+    final static int PKESKPTAG = 0xC1;
     // Public-Key Encrypted Session Key Packet
     // ------ header -----
     // C1 -- packet tag -- Public Key Encrypted Session Key Packet

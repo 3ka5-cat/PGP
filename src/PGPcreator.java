@@ -135,11 +135,11 @@ class Program {
         //6.  The receiving software generates a new hash code for the received
         //message and verifies it using the message's signature.  If the
         //verification is successful, the message is accepted as authentic.
-        crtr.sign("test.txt", "encrypted_test.txt");
+        //crtr.sign("test.txt", "encrypted_test.txt");
         crtr.encrypt("test.txt", "encrypted_test.txt");
         PGPcreator crtr2 = new PGPcreator();
         crtr2.decrypt("decrypted_test.txt", "encrypted_test.txt");
-        crtr2.checkSign("decrypted_test.txt", "encrypted_test.txt");
+        //crtr2.checkSign("decrypted_test.txt", "encrypted_test.txt");
     }
 }
 

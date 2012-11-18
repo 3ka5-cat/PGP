@@ -9,7 +9,8 @@ import java.io.RandomAccessFile;
 
 import java.util.Arrays;
 
-public class Des implements Constants {
+public class Des {
+    final static int SEDPTAG = 0xC3;
     // because of strange 2-octet pLength field in the header
     // TODO: how to write 1024 as pLength to 2-octet pLength field in the header
     Cipher ecipher;

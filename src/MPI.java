@@ -7,22 +7,30 @@ public class MPI {
     MPI(byte[] string)
     {
         MPIstring = string;
-        byte[] len_in_bits = Utilities.toBytes(MPIstring.length * 8);
+        //byte[] len_in_bits = Utilities.toBytes(MPIstring.length * 8);
+        int len_in_bits = 8*(string.length - 1) + Utilities.Bits_in_byte(string[0]);
         // Damned Big-Endian
-        MPIlen[0] = len_in_bits[3];
-        MPIlen[1] = len_in_bits[2];
+        byte[] len_to_write = Utilities.toBytes(len_in_bits);
+        MPIlen[0] = len_to_write[2];
+        MPIlen[1] = len_to_write[3];
+        /*MPIlen[0] = len_in_bits[2];
+        MPIlen[1] = len_in_bits[3]; */
     }
     MPI(RandomAccessFile in) throws Exception
     {
         byte[] len = new byte[4];
         if (in.read(MPIlen,0,2) != -1) {
             len[0] = len[1] = 0;
-            len[2] = MPIlen[1];
-            len[3] = MPIlen[0];
+            //len[2] = MPIlen[1];
+            //len[3] = MPIlen[0];
+            len[2] = MPIlen[0];
+            len[3] = MPIlen[1];
         }
         else
             throw new Exception("Can't read MPI length");
+        //i tut!!
         MPIstring = new byte[Utilities.toInt(len)/8];
+        // /8+7 ili kakaya-to takaia hren!
         if (in.read(MPIstring, 0, Utilities.toInt(len)/8) < 0)
             throw new Exception("Can't read MPI string");
     }

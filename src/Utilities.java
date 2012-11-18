@@ -40,11 +40,21 @@ public class Utilities {
 
     public static int toInt(byte[] byte_array)
     {
-        return ((byte_array[0] & 0xFF) << 24) +
+        int ret =  ((byte_array[0] & 0xFF) << 24) +
                 ((byte_array[1] & 0xFF) << 16) +
                 ((byte_array[2] & 0xFF) << 8) +
                 (byte_array[3] & 0xFF);
+        return ret;
     }
 
-
+    public static int Bits_in_byte(byte b)
+    {
+        int ret = 8;
+        for(int i=7;i>=0;i++)
+            if(b<<i == 0)
+                ret--;
+            else
+                break;
+        return ret;
+    }
 }
