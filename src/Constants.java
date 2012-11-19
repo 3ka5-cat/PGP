@@ -1,5 +1,6 @@
 public interface Constants {
     public final static int RSA_ID = 1;
+    public final static int ELGAMAL_ID = 16;
     public final static int SHA1_ID = 2;
     public final static int SP_TAG = 0xC2;
     public final static int TXTSIGN_TYPE = 0x01;

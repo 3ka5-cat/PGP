@@ -22,7 +22,6 @@ class Program {
         crtr2.decrypt("decrypted_test.txt", "encrypted_test.txt");
         //crtr2.checkSign("decrypted_test.txt", "encrypted_test.txt");
         */
-
         ElgamalCreator crtr = new ElgamalCreator(1024);
         crtr.encrypt("test.txt", "encrypted_test.txt", 1024);
         crtr.decrypt("decrypted_test.txt", "encrypted_test.txt");

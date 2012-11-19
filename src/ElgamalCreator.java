@@ -11,7 +11,7 @@ import java.security.SecureRandom;
  * Date: 18.11.12
  * Time: 18:57
  */
-public class ElgamalCreator {
+public class ElgamalCreator implements Constants {
     //params
     BigInteger g;
     BigInteger p;
@@ -20,7 +20,6 @@ public class ElgamalCreator {
     BigInteger x;   //private
     SecretKey key;  //3des
     // ciphertext
-    BigInteger c;
     BigInteger a;
 
     ElgamalCreator(int size) throws Exception {
@@ -53,11 +52,10 @@ public class ElgamalCreator {
         while (k.compareTo(p.subtract(BigInteger.ONE)) != -1 && k.compareTo(BigInteger.ONE) != 1);
         a = g.modPow(k, p);
         BigInteger m = new BigInteger(key.getEncoded());
-        System.out.println("P: " + p.toString());
         if (m.compareTo(p) == -1) {
-            System.out.println("Key: " + m.toString());
-            //encrypt c = (m + y^k)(mod p)
-            c = m.add(y.modPow(k, p)).mod(p);
+            System.out.println("Key: " + Utilities.getHexString(m.toByteArray()));
+            ElgamalPKESKP keyPacket = new ElgamalPKESKP(key, a, y, k, p);
+            keyPacket.dump(PGP_file);
             Des encryptor = new Des(key);
             encryptor.encrypt(input_file, PGP_file);
         } else System.out.println("Too big session key");
@@ -67,14 +65,34 @@ public class ElgamalCreator {
 
     public void decrypt(String file, String encrypted_file) throws Exception {
         RandomAccessFile PGP_file = new RandomAccessFile(encrypted_file, "r");
-        FileOutputStream output_file = new FileOutputStream(file, true);
-        //decrypt  m = (c - a^x)(mod p)
-        BigInteger key = c.subtract(a.modPow(x, p)).mod(p);
-        System.out.println("Decrypted key: " + key.toString());
-        SecretKeySpec ks = new SecretKeySpec(key.toByteArray(), "DESede");
-        Des decryptor = new Des(ks);
-        decryptor.decrypt(PGP_file, output_file);
-        output_file.close();
+        int len = -1;
+        byte[] arr = new byte[2];
+        while ((len = PGP_file.read(arr)) != -1 && (arr[0] & 0xff) != PKESKP_TAG) {
+            //System.out.println("decrypt: skip packet for PKESKP");
+            PGP_file.seek(arr[1] & 0xff);
+        }
+        if (len > 0) {
+            PGP_file.seek(PGP_file.getFilePointer() - 2);
+            FileOutputStream output_file = new FileOutputStream(file, true);
+            ElgamalPKESKP key_packet = new ElgamalPKESKP(PGP_file);
+            byte[] formatted_decr_key =
+                    Elgamal.ElgamalDecrypt(Utilities.getHexString(key_packet.encr_key.MPI_string),
+                            Utilities.getHexString(key_packet.base.MPI_string), x, p);
+            formatted_decr_key = PKCS1.decrypt(formatted_decr_key);
+            byte[] real_key = new byte[formatted_decr_key.length - 3];
+            System.arraycopy(formatted_decr_key, 1, real_key, 0, real_key.length);
+            System.out.println("Decrypted key: " + Utilities.getHexString(real_key));
+            if (formatted_decr_key[0] == TRIPLEDES_ID) {
+                SecretKeySpec ks = new SecretKeySpec(real_key, "DESede");
+                Des decryptor = new Des(ks);
+                decryptor.decrypt(PGP_file, output_file);
+            } else
+                System.out.println("Decrypt Elgamal PKESKP: id of symmetric encryption algorithm used to encrypt " +
+                        "data isn't TripleDES");
+            output_file.close();
+        } else
+            System.out.println("Decrypt: can't find PKESKP packet");
         PGP_file.close();
     }
+
 }

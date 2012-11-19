@@ -13,7 +13,6 @@ public class Des implements Constants {
     // TODO: how to write 1024 as packet_length to 2-octet packet_length field in the header
     Cipher ecipher;
     Cipher dcipher;
-    byte version;
 
     Des(SecretKey key) throws Exception {
         //byte[] iv = new byte[] { (byte) 0x8E, 0x12, 0x39, (byte) 0x9C, 0x07, 0x72, 0x6F, 0x5A };
@@ -28,7 +27,7 @@ public class Des implements Constants {
 
     public void encrypt(InputStream in, OutputStream out) throws Exception {
         // Symmetrically Encrypted Data Packet
-        version = 4;
+        byte version = 4;
         int block_size = ecipher.getBlockSize();
         int len = 0;
         byte[] buf = new byte[184];
@@ -68,7 +67,7 @@ public class Des implements Constants {
         System.out.println("Decrypted file:: ");
         while (in.read(header, 0, 2) != -1 && ((header[0] & 0xff) == SEDP_TAG)) {
             len = header[1] & 0xff;
-            version = (byte) in.read();
+            byte version = (byte) in.read();
             in.read();  // sym_alg
             in.read();  // s2k
             len -= 3;

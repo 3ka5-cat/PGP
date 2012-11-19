@@ -93,15 +93,19 @@ public class RSAcreator implements Constants {
             PKESKP key_packet = new PKESKP(PGP_file);
             byte[] formatted_decr_key =
                     RSA.RSAoperation(Utilities.getHexString(key_packet.encr_key.MPI_string), priv_exp, mod);
-            formatted_decr_key = key_packet.pkcs1Decrypt(formatted_decr_key);
+            formatted_decr_key = PKCS1.decrypt(formatted_decr_key);
             byte[] real_key = new byte[formatted_decr_key.length - 3];
             System.arraycopy(formatted_decr_key, 1, real_key, 0, real_key.length);
             //BigInteger test = new BigInteger(real_key);
             //String hexKey = test.toString(16);
             //int hc = hexKey.hashCode();
-            SecretKeySpec ks = new SecretKeySpec(real_key, "DESede");
-            Des decryptor = new Des(ks);
-            decryptor.decrypt(PGP_file, output_file);
+            if (formatted_decr_key[0] == TRIPLEDES_ID) {
+                SecretKeySpec ks = new SecretKeySpec(real_key, "DESede");
+                Des decryptor = new Des(ks);
+                decryptor.decrypt(PGP_file, output_file);
+            } else
+                System.out.println("Decrypt RSA PKESKP: id of symmetric encryption algorithm used to encrypt " +
+                        "data isn't TripleDES");
             output_file.close();
         } else
             System.out.println("Decrypt: can't find PKESKP packet");
