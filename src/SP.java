@@ -58,7 +58,7 @@ public class SP implements Constants {
         // 19 -- packet header, 2 + signature.len() -- MPI
         signature = new MPI(RSA.RSAoperation(Utilities.getHexString(EMSA_PKCS_Encoding(file, 50)), priv_exp, mod));
         //signature = new MPI(EMSA_PKCS_Encoding(file,50));
-        packet_length = Utilities.toBytes(19 + 2 + signature.len())[3]; //3 for big endian
+        packet_length = Utilities.toBytes(19 + 2 + 2 + signature.len())[3]; //3 for big endian
     }
 
     SP(RandomAccessFile in) throws Exception {
@@ -71,6 +71,8 @@ public class SP implements Constants {
             in.read(key_id, 0, 8);
             PKA_id = (byte) in.read();
             HA_id = (byte) in.read();
+            in.read();
+            in.read(); //2 sign bytes
             signature = new MPI(in);
             sign_header[0] = sign_type;
             System.arraycopy(sign_header, 1, time, 0, 4);
@@ -127,6 +129,8 @@ public class SP implements Constants {
             out.write(i & 0xff);
         out.write(PKA_id & 0xff);
         out.write(HA_id & 0xff);
+        out.write(signature.MPI_string[0] & 0xff);
+        out.write(signature.MPI_string[1] & 0xff);
         signature.dump(out);
     }
 }
