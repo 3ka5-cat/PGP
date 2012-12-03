@@ -38,7 +38,11 @@ public class ElgamalCreator implements Constants {
         do
             x = new BigInteger(size, rnd);
         while (x.compareTo(p.subtract(BigInteger.ONE)) != -1 && x.compareTo(BigInteger.ONE) != 1);
+        System.out.println("Private: " + Utilities.getHexString(x.toByteArray()));
         y = g.modPow(x, p);
+        System.out.println("Public: " + Utilities.getHexString(y.toByteArray()));
+        System.out.println("Modulus: " + Utilities.getHexString(p.toByteArray()));
+        System.out.println("Generator: " + Utilities.getHexString(g.toByteArray()));
     }
 
     public void encrypt(String file, String encrypted_file, int size) throws Exception {
@@ -53,7 +57,7 @@ public class ElgamalCreator implements Constants {
         a = g.modPow(k, p);
         BigInteger m = new BigInteger(key.getEncoded());
         if (m.compareTo(p) == -1) {
-            System.out.println("Key: " + Utilities.getHexString(m.toByteArray()));
+            System.out.println("3DES Key: " + Utilities.getHexString(m.toByteArray()));
             ElgamalPKESKP keyPacket = new ElgamalPKESKP(key, a, y, k, p);
             keyPacket.dump(PGP_file);
             Des encryptor = new Des(key);
